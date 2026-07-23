@@ -34,7 +34,7 @@ Este repositório contém o código-fonte desenvolvido para o projeto de Inicia�
 Responsável pela definição da rede e execução do pipeline de treinamento dos modelos.
 
 * **`run.py`**: Ponto de entrada para iniciar o fluxo de treinamento.
-* **`train.py` & `model.py**`: Implementam a lógica de otimização, validação e construção da rede.
+* **`train.py`** & **`model.py`**: Implementam a lógica de otimização, validação e construção da rede.
 * **`dataset.py`**: Gerencia a ingestão e preparação dos dados de treino/validação.
 
 ### 2. `TTA/` — Inferência, Agregação e Explicabilidade
