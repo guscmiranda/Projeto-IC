@@ -275,7 +275,8 @@ def evaluate_tta(arch_path):
 
             f1 = f1_score(
                 y_true,
-                y_pred
+                y_pred,
+                average="macro"
             )
 
             # -------------------------------------------------
