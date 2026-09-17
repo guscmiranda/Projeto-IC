@@ -14,6 +14,8 @@ from SBCAS_2026.EnsembleFractal.dataset import load_data_from_folders, ImageData
 from sklearn.model_selection import StratifiedKFold
 from SBCAS_2026.EnsembleFractal.utils import *
 from torch.utils.data import DataLoader
+from copy import deepcopy
+from tqdm import tqdm
 
 
 def train_one_fold(model, train_loader, val_loader, epochs=EPOCHS):
@@ -88,26 +90,26 @@ def train_one_fold(model, train_loader, val_loader, epochs=EPOCHS):
         # ================= MELHOR MODELO =================
         if val_loss < metrics["best_val_loss"]:
             metrics["best_val_loss"] = val_loss
-            best_model_state = model.state_dict()
+            best_model_state = deepcopy(model.state_dict())
             metrics["best_epoch"] = epoch+1
             metrics["best_val_accuracy"] = val_acc
             metrics["best_train_loss"] = train_loss
             metrics["best_train_accuracy"] = train_acc
 
-        print(
-            f"Época {epoch+1}/{epochs} | "
-            f"TrainLoss {train_loss:.4f} | TrainAcc {train_acc:.4f} | "
-            f"ValLoss {val_loss:.4f} | ValAcc {val_acc:.4f}"
-        )
+        # print(
+        #     f"Época {epoch+1}/{epochs} | "
+        #     f"TrainLoss {train_loss:.4f} | TrainAcc {train_acc:.4f} | "
+        #     f"ValLoss {val_loss:.4f} | ValAcc {val_acc:.4f}"
+        # )
 
     return model, best_model_state, history, metrics
 
 def run_kfold(dataset_path, dataset_type, class_names, backbone="mobilenet", seed=SEED, t_f=None, t_name=""):
 
-    os.makedirs(f"TTA/models/{seed}", exist_ok=True)
+    os.makedirs(f"TTA/models_updated/{seed}", exist_ok=True)
 
     data_list = load_data_from_folders(dataset_path, class_names, dataset_type)
-    print(f"Total de imagens: {len(data_list)}")
+    # print(f"Total de imagens: {len(data_list)}")
 
     paths = [x[0] for x in data_list]
     labels = [x[1] for x in data_list]
@@ -124,10 +126,11 @@ def run_kfold(dataset_path, dataset_type, class_names, backbone="mobilenet", see
     best_val_loss_global = float("inf")
     best_model_state = None
 
-    for fold, (train_idx, val_idx) in enumerate(skf.split(paths, labels)):
-        print("\n============================")
-        print(f"FOLD {fold+1}/{K_FOLDS}")
-        print("============================")
+    # for fold, (train_idx, val_idx) in enumerate(skf.split(paths, labels)):
+    for fold, (train_idx, val_idx) in enumerate(tqdm(skf.split(paths, labels), total=skf.get_n_splits(), desc="Folds")):
+        # print("\n============================")
+        # print(f"FOLD {fold+1}/{K_FOLDS}")
+        # print("============================")
 
         train_data = [(paths[i], labels[i]) for i in train_idx]
         val_data   = [(paths[i], labels[i]) for i in val_idx]
@@ -158,9 +161,9 @@ def run_kfold(dataset_path, dataset_type, class_names, backbone="mobilenet", see
             best_val_loss_global = metrics["best_val_loss"]
             best_model_state = best_model_fold_state
 
-            nome_modelo = f"TTA/models/{seed}/{backbone}_{dataset_type}_{t_name}.pth"
+            nome_modelo = f"TTA/models_updated/{seed}/{backbone}_{dataset_type}_{t_name}.pth"
             torch.save(best_model_state, nome_modelo)
-            print(f"   -> Novo melhor modelo salvo! ValLoss: {best_val_loss_global:.4f}")
+            # print(f"   -> Novo melhor modelo salvo! ValLoss: {best_val_loss_global:.4f}")
 
         # ---------- histórico e resultados ----------
         fold_results.append({
@@ -178,7 +181,7 @@ def run_kfold(dataset_path, dataset_type, class_names, backbone="mobilenet", see
         torch.cuda.empty_cache()
 
     # ================= SALVAR RESULTADOS =================
-    base_path = f"TTA/results_kfold/{seed}/{dataset_type}/{backbone}/{t_name}"
+    base_path = f"TTA/results_kfold_updated/{seed}/{dataset_type}/{backbone}/{t_name}"
     os.makedirs(base_path, exist_ok=True)
 
     # métricas finais por fold
@@ -189,10 +192,10 @@ def run_kfold(dataset_path, dataset_type, class_names, backbone="mobilenet", see
     df_history = pd.DataFrame(all_history)
     df_history.to_csv(f"{base_path}/history.csv", index=False)
 
-    print("\n===== RESULTADOS FINAIS DO K-FOLD =====")
-    print(df_metrics)
-    print("\nMédias:")
-    print(df_metrics.mean(numeric_only=True))
+    # print("\n===== RESULTADOS FINAIS DO K-FOLD =====")
+    # print(df_metrics)
+    # print("\nMédias:")
+    # print(df_metrics.mean(numeric_only=True))
 
     # ================= RECRIAR MELHOR MODELO =================
     best_model = criar_modelo(
@@ -206,24 +209,26 @@ def run_kfold(dataset_path, dataset_type, class_names, backbone="mobilenet", see
 
 
 def train_seeds(seeds, dataset_path, classes, transform, transform_name):
-    for seed in seeds:
-        print(f"\n===== Treinando com seed {seed} || {transform_name} =====")
+    results = {}
+    for seed in tqdm(seeds, desc=f"Seeds ({transform_name})", leave=False):
+        # print(f"\n===== Treinando com seed {seed} || {transform_name} =====")
         set_seed(seed)
 
-        results = {}
         results[seed] = {}
 
-        # # MobileNet - F-RecPlot
-        # results[seed]['mobnet_recplot'] = run_kfold(
-        #     dataset_path, "F-RecPlot", classes, backbone="mobilenet", seed=seed, t_f = transform, t_name=transform_name
-        # )
-        # torch.cuda.empty_cache()
+        if transform_name == "transform": # Modelos RecPLot só são treinados sem DataAugmentaion 
+               
+            # MobileNet - F-RecPlot
+            results[seed]['mobnet_recplot'] = run_kfold(
+                dataset_path, "F-RecPlot", classes, backbone="mobilenet", seed=seed, t_f = transform, t_name=transform_name
+            )
+            torch.cuda.empty_cache()
 
-        # # EfficientNet-B0 - F-RecPlot
-        # results[seed]['effnet_recplot'] = run_kfold(
-        #     dataset_path, "F-RecPlot", classes, backbone="efficientnet_b0", seed=seed, t_f = transform, t_name=transform_name
-        # )
-        # torch.cuda.empty_cache()
+            # EfficientNet-B0 - F-RecPlot
+            results[seed]['effnet_recplot'] = run_kfold(
+                dataset_path, "F-RecPlot", classes, backbone="efficientnet_b0", seed=seed, t_f = transform, t_name=transform_name
+            )
+            torch.cuda.empty_cache()
 
         # MobileNet - originais
         results[seed]['mobnet_orig'] = run_kfold(

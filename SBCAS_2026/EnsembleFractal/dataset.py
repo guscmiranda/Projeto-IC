@@ -9,7 +9,7 @@ def load_data_from_folders(dir_data, class_names, reshape_type):
 
         if dir_class.exists():
             images = list(dir_class.glob('*.*'))
-            print(f"Imagens encontradas em {class_name}: {len(images)}")
+            # print(f"Imagens encontradas em {class_name}: {len(images)}")
             for img_path in images:
                 data_list.append((str(img_path), class_index))
         else:

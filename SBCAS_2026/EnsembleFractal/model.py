@@ -1,20 +1,32 @@
 import torch.nn as nn
 
 from  SBCAS_2026.EnsembleFractal.utils import *
+from torchvision import models
+from torchvision.models import (
+    MobileNet_V2_Weights,
+    EfficientNet_B0_Weights,
+)
+import torch.nn as nn
 
 def criar_modelo(backbone: str, num_classes: int, pretrained=True):
     backbone = backbone.lower()
 
     if backbone == "mobilenet":
-        model = models.mobilenet_v2(pretrained=pretrained)
+        weights = MobileNet_V2_Weights.DEFAULT if pretrained else None
+        model = models.mobilenet_v2(weights=weights)
+
         model.classifier[1] = nn.Linear(
-            model.classifier[1].in_features, num_classes
+            model.classifier[1].in_features,
+            num_classes
         )
 
     elif backbone == "efficientnet_b0":
-        model = models.efficientnet_b0(pretrained=pretrained)
+        weights = EfficientNet_B0_Weights.DEFAULT if pretrained else None
+        model = models.efficientnet_b0(weights=weights)
+
         model.classifier[1] = nn.Linear(
-            model.classifier[1].in_features, num_classes
+            model.classifier[1].in_features,
+            num_classes
         )
 
     else:
