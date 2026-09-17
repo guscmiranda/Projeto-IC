@@ -1,6 +1,8 @@
-﻿# Projeto IC - Ensemble Fractal & Test-Time Augmentation (TTA)
+# Projeto IC - Ensemble Fractal & Test-Time Augmentation (TTA)
 
-Este repositório contém o código-fonte desenvolvido para o projeto de Iniciação Científica (IC), focado em treinamento de arquiteturas baseadas em **Ensemble Fractal** e aplicação de técnicas de **Test-Time Augmentation (TTA)** para inferência e explicabilidade (Grad-CAM).
+Este repositório contém o código-fonte desenvolvido para o projeto de Iniciação Científica (IC), focado no treinamento de arquiteturas de redes neurais, aplicação de técnicas de **Test-Time Augmentation (TTA)** e combinação de modelos utilizando diferentes representações das imagens, incluindo a representação **F-RecPlot**.
+
+O pipeline contempla o treinamento dos modelos, geração das imagens aumentadas, inferência, agregação dos resultados de TTA e formação de ensembles entre modelos treinados com imagens originais e imagens F-RecPlot.
 
 ---
 
@@ -8,75 +10,217 @@ Este repositório contém o código-fonte desenvolvido para o projeto de Inicia�
 
 ```text
 .
-├── EnsembleFractal/          # Módulo de treinamento e modelos
-│   ├── dataset.py            # Carregamento e pré-processamento dos dados
-│   ├── metrics.py            # Cálculo de métricas de avaliação
-│   ├── model.py              # Arquitetura dos modelos
-│   ├── train.py              # Estrutura do loop de treinamento
-│   ├── run.py                # Script principal de execução do treino
-│   ├── utils.py              # Funções utilitárias de suporte
+
+├── EnsembleFractal/             # Módulo de treinamento e modelos
+│   ├── dataset.py               # Carregamento e preparação dos dados
+│   ├── metrics.py               # Cálculo de métricas de avaliação
+│   ├── model.py                 # Construção e carregamento dos modelos
+│   ├── train.py                 # Lógica de treinamento e validação
+│   ├── run.py                   # Script principal de execução do treinamento
+│   ├── utils.py                 # Funções e configurações auxiliares
 │   └── __init__.py
 │
-└── TTA/                      # Módulo de Test-Time Augmentation e Inferência
-    ├── apply_tta.py          # Gera dataset de inferência e roda testes nos modelos
-    ├── aggregation.py        # Calcula e avalia resultados por estratégia de agregação
-    ├── gradcam_utils.py      # Utilitários para geração dos mapas de ativação (Grad-CAM)
-    └── limpa_csv.py          # Formata dados em CSV para análise da agregação por votação
-
+└── TTA/                         # Módulo de TTA, inferência e ensembles
+    ├── apply_tta.py             # Geração das imagens TTA e inferência
+    ├── aggregation.py           # Agregação e avaliação dos resultados do TTA
+    ├── gradcam_utils.py         # Funções auxiliares para Grad-CAM
+    ├── limpa_csv.py             # Filtragem e organização dos resultados de TTA
+    ├── ensemble.py              # Formação e avaliação dos ensembles
+    └── limpa_ensembles.py       # Consolidação dos resultados entre seeds
 ```
 
 ---
 
-## 🚀 Módulos do Projeto
+## Módulos do Projeto
 
 ### 1. `EnsembleFractal/` — Treinamento
 
-Responsável pela definição da rede e execução do pipeline de treinamento dos modelos.
+Responsável pela definição dos modelos e execução do pipeline de treinamento.
 
-* **`run.py`**: Ponto de entrada para iniciar o fluxo de treinamento.
-* **`train.py`** & **`model.py`**: Implementam a lógica de otimização, validação e construção da rede.
-* **`dataset.py`**: Gerencia a ingestão e preparação dos dados de treino/validação.
+* **`run.py`**: ponto de entrada para executar o fluxo de treinamento.
 
-### 2. `TTA/` — Inferência, Agregação e Explicabilidade
+* **`train.py`**: implementa a lógica de treinamento, validação e execução do K-Fold.
 
-Aplica estratégias de Test-Time Augmentation para melhorar a robustez das predições em tempo de teste.
+* **`model.py`**: responsável pela construção e carregamento das arquiteturas utilizadas.
 
-* **`apply_tta.py`**: Executa os testes em todos os modelos e gera o dataset de inferência.
-> ⚠️ **Aviso de Desempenho:** É altamente recomendado comentar a chamada do **Grad-CAM** neste script durante execuções de rotina para otimizar o tempo de processamento.
+* **`dataset.py`**: gerencia o carregamento dos dados de treino e validação.
 
+* **`utils.py`**: reúne configurações, transformações e funções auxiliares utilizadas pelo treinamento.
 
-* **`aggregation.py`**: Processa e consolida as predições de acordo com diferentes estratégias de agregação do TTA.
-* **`gradcam_utils.py`**: Funções de suporte para interpretação do modelo através de visualizações Grad-CAM.
-* **`limpa_csv.py`**: Trata os arquivos de saída para melhorar a visualização e análise das estratégias baseadas em votação.
+---
+
+### 2. `TTA/` — Test-Time Augmentation e Inferência
+
+Responsável pela geração das imagens aumentadas, execução dos modelos treinados e armazenamento das predições.
+
+* **`apply_tta.py`**: gera as imagens utilizadas no TTA e executa a inferência dos modelos originais. São geradas múltiplas versões de cada imagem para cada estratégia de TTA. O resultado inicial é armazenado em `results.csv`.
+
+> ⚠️ **Aviso de desempenho:** é recomendado manter o código de Grad-CAM comentado durante as execuções de rotina, caso a geração dos mapas de ativação não seja necessária. O `apply_tta.py` possui suporte ao Grad-CAM por meio do `gradcam_utils.py`.
+
+* **`aggregation.py`**: processa os `results.csv` gerados pelo TTA. Para cada estratégia, calcula a média e o desvio padrão das probabilidades e logits, além da agregação por votação. Também calcula as métricas das diferentes formas de agregação.
+
+* **`limpa_csv.py`**: filtra os resultados da agregação, mantendo atualmente os resultados referentes ao método `mean_prob_pred` e removendo informações que não são necessárias para a análise final.
+
+---
+
+### 3. `ensemble.py` — Ensemble
+
+Responsável pela combinação dos modelos treinados com imagens originais e modelos treinados com a representação F-RecPlot.
+
+O script:
+
+1. Carrega os `aggregated_results.csv` dos modelos originais.
+2. Seleciona as estratégias de TTA definidas para cada arquitetura.
+3. Obtém as probabilidades agregadas do TTA.
+4. Carrega os modelos F-RecPlot correspondentes a cada seed.
+5. Executa a inferência nos dados F-RecPlot.
+6. Combina os resultados dos modelos por média das probabilidades.
+7. Calcula as métricas dos ensembles.
+8. Salva as predições e métricas para cada seed.
+
+Atualmente, as estratégias utilizadas no ensemble são:
+
+```text
+MobileNetV2:     none+T_F
+EfficientNet-B0: none+T_G
+```
+
+enquanto os modelos F-RecPlot são utilizados sem TTA adicional.
+
+Os modelos são identificados no ensemble como:
+
+```text
+MO = MobileNetV2 Original
+EO = EfficientNet-B0 Original
+MR = MobileNetV2 F-RecPlot
+ER = EfficientNet-B0 F-RecPlot
+```
+
+São avaliadas dez combinações:
+
+```text
+MO+MO
+EO+EO
+MR+MR
+ER+ER
+MO+EO
+MR+ER
+MO+MR
+EO+ER
+MO+ER
+EO+MR
+```
+
+---
+
+### 4. `limpa_ensembles.py` — Consolidação dos resultados
+
+Responsável pela consolidação dos resultados obtidos para as diferentes seeds.
+
+O script lê o `ensemble_metrics.csv`, agrupa os resultados por ensemble e calcula **média ± desvio padrão** para:
+
+- Accuracy
+- F1 Macro
+- Precision Macro
+- Recall Macro
+
+O resultado final é salvo em:
+
+```text
+ensemble_metrics_across_seeds.csv
+```
 
 ---
 
 ## 🛠️ Como Executar
 
-### 1. Treinamento do Modelo
+O pipeline deve ser executado na seguinte ordem:
 
-Para iniciar a fase de treinamento:
+### 1. Treinamento dos modelos
 
 ```bash
 python EnsembleFractal/run.py
-
 ```
 
-### 2. Aplicação do TTA e Inferência
+Essa etapa gera os modelos treinados que serão utilizados posteriormente pelo TTA e pelo ensemble.
 
-Para rodar os testes e gerar os dados de inferência:
+### 2. Aplicação do TTA e inferência
 
 ```bash
 python TTA/apply_tta.py
-
 ```
 
-### 3. Agregação dos Resultados
+Gera as imagens aumentadas e executa a inferência dos modelos originais, produzindo os arquivos `results.csv`.
 
-Para processar e formatar as métricas de agregação:
+### 3. Agregação dos resultados do TTA
 
 ```bash
 python TTA/aggregation.py
-python TTA/limpa_csv.py
+```
 
+Processa os `results.csv` e gera os resultados agregados e avaliados, incluindo `aggregated_results.csv` e `aggregated_evaluation.csv`.
+
+### 4. Organização dos resultados do TTA
+
+```bash
+python TTA/limpa_csv.py
+```
+
+Filtra os resultados para a análise baseada na média das probabilidades.
+
+### 5. Formação dos ensembles
+
+```bash
+python TTA/ensemble.py
+```
+
+Combina os modelos originais com os modelos F-RecPlot e gera as métricas e predições dos ensembles.
+
+### 6. Consolidação entre seeds
+
+```bash
+python TTA/limpa_ensembles.py
+```
+
+Gera o resultado final consolidado com média e desvio padrão das métricas entre as diferentes seeds.
+
+---
+
+## 🔄 Fluxo do Pipeline
+
+```text
+run.py
+   │
+   ▼
+Modelos treinados
+   │
+   ▼
+apply_tta.py
+   │
+   ▼
+results.csv
+   │
+   ▼
+aggregation.py
+   │
+   ├── aggregated_results.csv
+   └── aggregated_evaluation.csv
+   │
+   ▼
+limpa_csv.py
+   │
+   ▼
+Resultados TTA organizados
+   │
+   ▼
+ensemble.py
+   │
+   ▼
+ensemble_metrics.csv
+   │
+   ▼
+limpa_ensembles.py
+   │
+   ▼
+ensemble_metrics_across_seeds.csv
 ```
