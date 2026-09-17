@@ -5,7 +5,7 @@ import pandas as pd
 # CONFIGURAÇÃO
 # =========================================================
 
-ROOT_DIR = "TTA/tta_outputs_v2"
+ROOT_DIR = "tta_outputs_v2"
 
 architectures = [
     "efficientnet_b0_originais",
@@ -36,8 +36,8 @@ for architecture in architectures:
 
     df = pd.read_csv(csv_path)
 
-    # Mantém apenas o método vote_pred
-    df = df[df["method"] == "vote_pred"].copy()
+    # Mantém apenas o método mean_prob_pred
+    df = df[df["method"] == "mean_prob_pred"].copy()
 
     # Remove o prefixo "none+" da estratégia
     df["tta_strategy"] = (
@@ -55,7 +55,7 @@ for architecture in architectures:
     save_path = os.path.join(
         ROOT_DIR,
         architecture,
-        "tta_summary_vote_pred.csv"
+        "tta_summary_mean_prob_pred.csv"
     )
 
     df.to_csv(save_path, index=False)
