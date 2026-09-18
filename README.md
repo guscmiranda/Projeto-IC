@@ -11,7 +11,7 @@ O pipeline contempla o treinamento dos modelos, geração das imagens aumentadas
 ```text
 .
 
-├── EnsembleFractal/             # Módulo de treinamento e modelos
+├── Treinamento/                 # Módulo de treinamento e modelos
 │   ├── dataset.py               # Carregamento e preparação dos dados
 │   ├── metrics.py               # Cálculo de métricas de avaliação
 │   ├── model.py                 # Construção e carregamento dos modelos
@@ -33,7 +33,7 @@ O pipeline contempla o treinamento dos modelos, geração das imagens aumentadas
 
 ## Módulos do Projeto
 
-### 1. `EnsembleFractal/` — Treinamento
+### 1. `Treinamento/` — Treinamento dos Modelos
 
 Responsável pela definição dos modelos e execução do pipeline de treinamento.
 
@@ -139,7 +139,7 @@ O pipeline deve ser executado na seguinte ordem:
 ### 1. Treinamento dos modelos
 
 ```bash
-python EnsembleFractal/run.py
+python Treinamento/run.py
 ```
 
 Essa etapa gera os modelos treinados que serão utilizados posteriormente pelo TTA e pelo ensemble.
@@ -189,37 +189,37 @@ Gera o resultado final consolidado com média e desvio padrão das métricas ent
 ## 🔄 Fluxo do Pipeline
 
 ```text
-run.py
+Treinamento/run.py
    │
    ▼
 Modelos treinados
    │
    ▼
-apply_tta.py
+TTA/apply_tta.py
    │
    ▼
 results.csv
    │
    ▼
-aggregation.py
+TTA/aggregation.py
    │
    ├── aggregated_results.csv
    └── aggregated_evaluation.csv
    │
    ▼
-limpa_csv.py
+TTA/limpa_csv.py
    │
    ▼
 Resultados TTA organizados
    │
    ▼
-ensemble.py
+TTA/ensemble.py
    │
    ▼
 ensemble_metrics.csv
    │
    ▼
-limpa_ensembles.py
+TTA/limpa_ensembles.py
    │
    ▼
 ensemble_metrics_across_seeds.csv
