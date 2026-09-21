@@ -6,6 +6,14 @@ O pipeline contempla o treinamento dos modelos, geração das imagens aumentadas
 
 ---
 
+## 📊 Dataset
+
+O dataset utilizado no projeto é o **OralEpitheliumDB**, disponibilizado no repositório:
+
+**[LIPAI-Org/OralEpitheliumDB_Dataset](https://github.com/LIPAI-Org/OralEpitheliumDB_Dataset)**
+
+---
+
 ## 📁 Estrutura do Repositório
 
 ```text
@@ -22,7 +30,7 @@ O pipeline contempla o treinamento dos modelos, geração das imagens aumentadas
 │
 └── TTA/                         # Módulo de TTA, inferência e ensembles
     ├── apply_tta.py             # Geração das imagens TTA e inferência
-    ├── aggregation.py           # Agregação e avaliação dos resultados do TTA
+    ├── aggregation.py           # Agregação e avaliação dos resultados de TTA
     ├── gradcam_utils.py         # Funções auxiliares para Grad-CAM
     ├── limpa_csv.py             # Filtragem e organização dos resultados de TTA
     ├── ensemble.py              # Formação e avaliação dos ensembles
@@ -81,8 +89,8 @@ O script:
 Atualmente, as estratégias utilizadas no ensemble são:
 
 ```text
-MobileNetV2:     none+T_F
-EfficientNet-B0: none+T_G
+MobileNetV2:       none+T_F
+EfficientNet-B0:  none+T_G
 ```
 
 enquanto os modelos F-RecPlot são utilizados sem TTA adicional.
@@ -91,8 +99,11 @@ Os modelos são identificados no ensemble como:
 
 ```text
 MO = MobileNetV2 Original
+
 EO = EfficientNet-B0 Original
+
 MR = MobileNetV2 F-RecPlot
+
 ER = EfficientNet-B0 F-RecPlot
 ```
 
@@ -119,10 +130,10 @@ Responsável pela consolidação dos resultados obtidos para as diferentes seeds
 
 O script lê o `ensemble_metrics.csv`, agrupa os resultados por ensemble e calcula **média ± desvio padrão** para:
 
-- Accuracy
-- F1 Macro
-- Precision Macro
-- Recall Macro
+* Accuracy
+* F1 Macro
+* Precision Macro
+* Recall Macro
 
 O resultado final é salvo em:
 
@@ -190,37 +201,37 @@ Gera o resultado final consolidado com média e desvio padrão das métricas ent
 
 ```text
 Treinamento/run.py
-   │
-   ▼
+       │
+       ▼
 Modelos treinados
-   │
-   ▼
+       │
+       ▼
 TTA/apply_tta.py
-   │
-   ▼
+       │
+       ▼
 results.csv
-   │
-   ▼
+       │
+       ▼
 TTA/aggregation.py
-   │
-   ├── aggregated_results.csv
-   └── aggregated_evaluation.csv
-   │
-   ▼
+       │
+       ├── aggregated_results.csv
+       └── aggregated_evaluation.csv
+       │
+       ▼
 TTA/limpa_csv.py
-   │
-   ▼
+       │
+       ▼
 Resultados TTA organizados
-   │
-   ▼
+       │
+       ▼
 TTA/ensemble.py
-   │
-   ▼
+       │
+       ▼
 ensemble_metrics.csv
-   │
-   ▼
+       │
+       ▼
 TTA/limpa_ensembles.py
-   │
-   ▼
+       │
+       ▼
 ensemble_metrics_across_seeds.csv
 ```
